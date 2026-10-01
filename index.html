@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>교직원 직무연수 스마트 문제 풀이 & 복습 앱</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Pretendard Font -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    body { font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-700">
+
+  <!-- 헤더 -->
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-lg shadow-md shadow-blue-500/20">
+          교
+        </div>
+        <div>
+          <h1 class="text-base font-extrabold text-slate-900 tracking-tight">교직원 연수 스마트 마스터</h1>
+          <p class="text-[11px] text-slate-500 font-medium">연수 책자(01강~60강) 시험 대비 & 오답 복습</p>
+        </div>
+      </div>
+
+      <!-- 네비게이션 탭 -->
+      <nav class="flex items-center gap-1 p-1 bg-slate-100 rounded-2xl border border-slate-200 overflow-x-auto">
+        <button class="nav-btn px-3 py-1.5 rounded-xl text-xs font-bold transition bg-blue-600 text-white shadow-sm shrink-0" data-tab="quiz">
+          🎯 문제 풀기
+        </button>
+        <button class="nav-btn px-3 py-1.5 rounded-xl text-xs font-bold transition text-slate-600 hover:bg-slate-200/60 shrink-0" data-tab="pdf">
+          📑 교재 원본(PDF)
+        </button>
+        <button class="nav-btn px-3 py-1.5 rounded-xl text-xs font-bold transition text-slate-600 hover:bg-slate-200/60 shrink-0" data-tab="study">
+          📖 요약 학습실
+        </button>
+        <button class="nav-btn px-3 py-1.5 rounded-xl text-xs font-bold transition text-slate-600 hover:bg-slate-200/60 shrink-0" data-tab="wrong">
+          📌 오답·북마크
+        </button>
+        <button class="nav-btn px-3 py-1.5 rounded-xl text-xs font-bold transition text-slate-600 hover:bg-slate-200/60 shrink-0" data-tab="stats">
+          📊 학습 통계
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 메인 컨텐츠 영역 -->
+  <main class="max-w-5xl mx-auto px-4 py-6">
+
+    <!-- ============================================== -->
+    <!-- [TAB 1] 문제 풀이 탭                           -->
+    <!-- ============================================== -->
+    <div id="tab-quiz" class="tab-content">
+      
+      <!-- 1-1. 퀴즈 설정 화면 (Setup View) -->
+      <div id="quiz-setup-view" class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm max-w-2xl mx-auto">
+        <div class="text-center mb-8">
+          <span class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 mb-2">
+            직무연수 이수평가 & 교원 임용 대비
+          </span>
+          <h2 class="text-2xl font-black text-slate-900">맞춤형 실전 모의고사 설정</h2>
+          <p class="text-xs text-slate-500 mt-1">원하는 단원과 문항 수를 선택하여 언제든지 시험을 치르고 복습하세요.</p>
+        </div>
+
+        <!-- 단원 선택 -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-2.5">
+            <label class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+              <span>📚</span> 출제 단원 선택
+            </label>
+            <div class="space-x-2 text-xs">
+              <button onclick="toggleAllUnits(true)" class="text-blue-600 hover:underline font-semibold">전체 선택</button>
+              <span class="text-slate-300">|</span>
+              <button onclick="toggleAllUnits(false)" class="text-slate-500 hover:underline">선택 해제</button>
+            </div>
+          </div>
+          <div id="unit-checkboxes" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <!-- 자바스크립트로 동적 렌더링 -->
+          </div>
+        </div>
+
+        <!-- 문항 수 & 풀이 모드 선택 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <label class="block text-xs font-bold text-slate-700 mb-2">🔢 풀이 문항 수</label>
+            <select id="question-count-select" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="5">5 문항 (스피드 풀이)</option>
+              <option value="10" selected>10 문항 (추천 표준)</option>
+              <option value="15">15 문항</option>
+              <option value="20">20 문항 (실전 하프 모의고사)</option>
+              <option value="all">선택 단원 전체 풀기</option>
+            </select>
+            <span id="available-question-count" class="text-[11px] text-slate-400 mt-1.5 block">50문제 선택 가능</span>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <label class="block text-xs font-bold text-slate-700 mb-2">⚙️ 풀이 모드</label>
+            <div class="space-y-1.5 text-xs">
+              <label class="flex items-center gap-2 cursor-pointer font-medium text-slate-800">
+                <input type="radio" name="quiz-mode" value="realtime" checked class="text-blue-600">
+                <span>실시간 피드백 모드 (문제별 즉시 해설)</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer font-medium text-slate-800">
+                <input type="radio" name="quiz-mode" value="exam" class="text-blue-600">
+                <span>실전 시험 모드 (마지막에 일괄 채점)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="startQuiz()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-base shadow-lg shadow-blue-500/25 transition">
+          시험 시작하기 🚀
+        </button>
+      </div>
+
+      <!-- 1-2. 퀴즈 진행 화면 (Active Quiz View) -->
+      <div id="quiz-active-view" class="hidden max-w-2xl mx-auto">
+        <!-- 상단 컨트롤 바 -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span id="quiz-timer" class="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-lg">
+              ⏱️ 00:00
+            </span>
+            <span id="quiz-progress-text" class="text-xs font-bold text-slate-500">
+              1 / 10
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="quiz-bookmark-btn" onclick="toggleCurrentBookmark()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 transition">
+              ☆ 북마크
+            </button>
+            <button onclick="resetToSetup()" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition">
+              시험 종료
+            </button>
+          </div>
+        </div>
+
+        <!-- 프로그레스 바 -->
+        <div class="w-full bg-slate-200 h-2 rounded-full mb-4 overflow-hidden">
+          <div id="quiz-progress-bar" class="bg-gradient-to-r from-blue-600 to-indigo-600 h-full w-0 transition-all duration-300"></div>
+        </div>
+
+        <!-- 문제 카드 -->
+        <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm mb-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span id="question-badge-unit" class="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-md">
+              제1편 생활지도
+            </span>
+            <span id="question-badge-chapter" class="text-xs font-semibold text-slate-400">
+              02강 수면 지도
+            </span>
+            <button id="question-pdf-direct-btn" class="ml-auto text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-lg flex items-center gap-1 transition">
+              <span>📑 원본 교재 보기</span>
+            </button>
+          </div>
+
+          <h3 id="question-title" class="text-base sm:text-lg font-extrabold text-slate-900 leading-snug mb-6">
+            문제 지문이 여기에 표시됩니다.
+          </h3>
+
+          <!-- 보기 컨테이너 -->
+          <div id="question-options-container" class="space-y-3">
+            <!-- 자바스크립트로 보기 렌더링 -->
+          </div>
+
+          <!-- 실시간 해설 박스 (실시간 모드일 때 선택 후 노출) -->
+          <div id="quiz-feedback-box" class="hidden"></div>
+        </div>
+
+        <!-- 하단 네비게이션 버튼 -->
+        <div class="flex items-center justify-between">
+          <button id="prev-question-btn" onclick="prevQuestion()" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition disabled:opacity-40">
+            ◀ 이전 문제
+          </button>
+          <button id="next-question-btn" onclick="nextQuestion()" class="px-6 py-2.5 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white shadow transition">
+            다음 문제 ➔
+          </button>
+        </div>
+      </div>
+
+      <!-- 1-3. 퀴즈 결과 화면 (Result View) -->
+      <div id="quiz-result-view" class="hidden max-w-2xl mx-auto">
+        <div class="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-center mb-6">
+          <span class="text-4xl block mb-2">🎓</span>
+          <h2 class="text-2xl font-black text-slate-900 mb-1">시험 완료! 수고하셨습니다</h2>
+          <p class="text-xs text-slate-400 mb-6">틀린 문제를 꼼꼼히 점검하고 연수 교재 내용을 복습하세요.</p>
+
+          <div class="inline-flex items-center justify-center p-6 bg-gradient-to-tr from-blue-50 to-indigo-50 border border-blue-100 rounded-3xl gap-6 mb-6">
+            <div>
+              <span class="text-xs text-slate-400 block font-semibold">최종 점수</span>
+              <span id="result-score" class="text-4xl font-black text-blue-600">80점</span>
+            </div>
+            <div class="w-px h-12 bg-slate-200"></div>
+            <div>
+              <span class="text-xs text-slate-400 block font-semibold">정답 현황</span>
+              <span id="result-correct-count" class="text-lg font-bold text-slate-800">8 / 10 문제</span>
+              <span id="result-time" class="text-[11px] text-slate-400 block">소요 시간: 02분 15초</span>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-center gap-3">
+            <button id="retry-wrong-btn" class="px-5 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md shadow-rose-500/20 transition">
+              ❌ 틀린 문제만 다시 풀기
+            </button>
+            <button onclick="resetToSetup()" class="px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm shadow-sm transition">
+              🔄 새로운 모의고사 시작
+            </button>
+          </div>
+        </div>
+
+        <!-- 문항별 해설 검토 리스트 -->
+        <div class="space-y-4 mb-8">
+          <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+            <span>📝</span> 전 문항 해설 및 복습
+          </h3>
+          <div id="result-review-list" class="space-y-3">
+            <!-- 자바스크립트로 렌더링 -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- [TAB 2] 첨부 교재 원본 (PDF Viewer)           -->
+    <!-- ============================================== -->
+    <div id="tab-pdf" class="tab-content hidden">
+      <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm mb-6">
+        <!-- PDF 뷰어 컨트롤 툴바 -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">📑</span>
+            <div>
+              <h2 class="text-base sm:text-lg font-black text-slate-900">교직원 연수 교재 스캔본 원본 열람</h2>
+              <p class="text-[11px] text-slate-500">책자 6쪽~291쪽 (총 143쪽 스프레드) 전권 수록</p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- 주요 단원 바로가기 -->
+            <select id="pdf-chapter-jump" onchange="jumpPdfToChapter(this.value)" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-blue-500">
+              <option value="1">📑 01강 내가 겪은 고통과 후회 (p.6)</option>
+              <option value="3">📑 02강 수업 중 자는 학생 (p.10)</option>
+              <option value="5">📑 03강 다중지능 & ADHD (p.14)</option>
+              <option value="8">📑 04강 출석일수 & 벌청소 고시 (p.20)</option>
+              <option value="11">📑 05강 강제전학 & 징계 단계 (p.26)</option>
+              <option value="17">📑 07강 회장 선거 & 자치권 (p.39)</option>
+              <option value="20">📑 08강 따돌림 & 학교폭력 (p.45)</option>
+              <option value="23">📑 09강 억울한 아이 & 성찰문 (p.50)</option>
+              <option value="26">📑 11강 험담 & 학생부 기재 (p.57)</option>
+              <option value="31">📑 13강 물리적 제지 & ADHD (p.67)</option>
+              <option value="37">📑 15강 교원학습공동체 PLC (p.79)</option>
+              <option value="40">📑 16강 사이버 폭력 (p.84)</option>
+              <option value="43">📑 17강 긴급 폭행 대처 (p.90)</option>
+              <option value="46">📑 18강 학기초 도난 예방 (p.97)</option>
+              <option value="49">📑 19강 장난과 폭력·인사해약 (p.103)</option>
+              <option value="52">📑 20강 격분 학부모·BIFF (p.109)</option>
+              <option value="54">📑 21강 민원 응대 & 300만원 과태료 (p.113)</option>
+              <option value="60">📑 22강 흡연 & 금연 단속 (p.124)</option>
+              <option value="63">📑 23강 교사 소진 & 1395 핫라인 (p.130)</option>
+              <option value="65">📑 24강 꾀병 & 보건실 (p.134)</option>
+              <option value="70">📑 26강 성사안 112 즉시신고 (p.145)</option>
+              <option value="73">📑 27강 성희롱 vs 성폭력 (p.150)</option>
+              <option value="77">📑 29강 불법촬영 & 유포 처벌 (p.159)</option>
+              <option value="80">📑 30강 임신 학생 학습권 (p.164)</option>
+              <option value="89">📑 34강 드라이커스 문제행동 (p.182)</option>
+              <option value="94">📑 35강 학교폭력 자체해결 4대요건 (p.192)</option>
+              <option value="97">📑 36강 학생선도위원회 (p.198)</option>
+              <option value="100">📑 38강 신인류 학부모 & 소통 (p.204)</option>
+              <option value="122">📑 50강 관리자 관계 & 리더십 (p.248)</option>
+              <option value="124">📑 51강 교장 직무 & 위임전결 (p.252)</option>
+              <option value="132">📑 55강 공유 리더십 (p.269)</option>
+              <option value="135">📑 56강 대학원 복무 & 유튜브 (p.275)</option>
+              <option value="136">📑 57강 휴직 제도 비교표 (p.277)</option>
+              <option value="139">📑 58강 교사 보수 & 수당 (p.282)</option>
+              <option value="140">📑 59강 교권보호 & 갑질신고 (p.285)</option>
+              <option value="142">📑 60강 교사가 나아갈 길 (p.288)</option>
+            </select>
+
+            <!-- 페이지 직접 입력 -->
+            <div class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1">
+              <span class="text-[11px] text-slate-500 font-semibold">스캔쪽:</span>
+              <input id="pdf-custom-page" type="number" min="1" max="143" value="1" class="w-12 text-center text-xs font-bold bg-transparent focus:outline-none">
+              <button onclick="jumpPdfToPageInput()" class="px-2 py-0.5 rounded-lg text-xs font-bold bg-blue-600 text-white hover:bg-blue-700">이동</button>
+            </div>
+
+            <!-- 새 창 열기 & 다운로드 -->
+            <a href="training_book.pdf" target="_blank" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center gap-1 transition">
+              <span>새 창에서 열기</span> ↗️
+            </a>
+            <a href="training_book.pdf" download="교직원연수교재_원본.pdf" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 flex items-center gap-1 transition">
+              <span>다운로드</span> 📥
+            </a>
+          </div>
+        </div>
+
+        <!-- PDF 임베드 프레임 -->
+        <div class="w-full bg-slate-200 rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
+          <iframe id="main-pdf-viewer" src="training_book.pdf#page=1" class="w-full h-[78vh] border-0" title="교직원 연수 책자 원본 PDF"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- [TAB 3] 연수 교재 요약 학습실 (Study & Reference) -->
+    <!-- ============================================== -->
+    <div id="tab-study" class="tab-content hidden">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-xl font-black text-slate-900">📖 연수 교재 핵심 요약 학습실</h2>
+            <p class="text-xs text-slate-500 mt-0.5">01강부터 60강까지의 핵심 내용, 선배 교사 조언, 관련 법령을 검색하고 학습하세요.</p>
+          </div>
+          <!-- 검색창 -->
+          <div class="relative w-full sm:w-72">
+            <input id="study-search" type="text" placeholder="키워드 검색 (예: 벌청소, 1395, 휴직)" 
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <span class="absolute right-3 top-2.5 text-slate-400 text-xs">🔍</span>
+          </div>
+        </div>
+
+        <!-- 단원 필터 칩 -->
+        <div id="study-unit-filters" class="flex flex-wrap gap-1.5 mb-6">
+          <!-- 자바스크립트로 렌더링 -->
+        </div>
+
+        <!-- 카드 그리드 -->
+        <div id="study-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- 자바스크립트로 렌더링 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- [TAB 3] 오답노트 & 북마크 (Review Note)        -->
+    <!-- ============================================== -->
+    <div id="tab-wrong" class="tab-content hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- 오답 노트 영역 -->
+        <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">📕</span>
+              <h3 class="text-base font-extrabold text-slate-900">오답 노트</h3>
+              <span id="wrong-badge-count" class="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800">0문제</span>
+            </div>
+            <button onclick="startWrongOnlyQuiz()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition">
+              오답 모의고사 시작
+            </button>
+          </div>
+          <p class="text-xs text-slate-400 mb-4">문제를 풀다 틀린 문제가 자동으로 누적 기록됩니다.</p>
+          <div id="wrong-questions-list" class="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+            <!-- 렌더링 -->
+          </div>
+        </div>
+
+        <!-- 북마크 중요 문제 영역 -->
+        <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">⭐</span>
+              <h3 class="text-base font-extrabold text-slate-900">북마크 보관함</h3>
+            </div>
+            <button onclick="startBookmarkOnlyQuiz()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition">
+              북마크 모의고사 시작
+            </button>
+          </div>
+          <p class="text-xs text-slate-400 mb-4">다시 보고 싶은 중요한 문제들을 모아 집중 점검하세요.</p>
+          <div id="bookmark-questions-list" class="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+            <!-- 렌더링 -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- [TAB 4] 학습 통계 (Stats)                      -->
+    <!-- ============================================== -->
+    <div id="tab-stats" class="tab-content hidden max-w-2xl mx-auto">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm mb-6">
+        <h2 class="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
+          <span>📊</span> 나의 학습 통계 및 누적 성적
+        </h2>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center">
+            <span class="text-xs text-slate-400 block font-semibold">총 푼 문항</span>
+            <span id="stat-total-solved" class="text-2xl font-black text-slate-800">0</span>
+          </div>
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center">
+            <span class="text-xs text-slate-400 block font-semibold">평균 정답률</span>
+            <span id="stat-avg-score" class="text-2xl font-black text-blue-600">0%</span>
+          </div>
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center">
+            <span class="text-xs text-slate-400 block font-semibold">현재 오답 수</span>
+            <span id="stat-wrong-count" class="text-2xl font-black text-rose-600">0</span>
+          </div>
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center">
+            <span class="text-xs text-slate-400 block font-semibold">북마크 수</span>
+            <span id="stat-bookmark-count" class="text-2xl font-black text-amber-500">0</span>
+          </div>
+        </div>
+
+        <h3 class="text-sm font-extrabold text-slate-800 mb-3">최근 모의고사 이력</h3>
+        <div id="stats-history-list" class="space-y-2">
+          <!-- 렌더링 -->
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 교재 원문/요약 모달 (팝업) -->
+  <div id="reference-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h4 class="text-sm font-bold text-slate-900">📖 관련 교재 핵심 내용</h4>
+        <button onclick="closeReferenceModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+      </div>
+      <div id="reference-modal-body" class="max-h-[70vh] overflow-y-auto pr-1">
+        <!-- 동적 렌더링 -->
+      </div>
+      <div class="mt-6 text-right">
+        <button onclick="closeReferenceModal()" class="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition">
+          닫기
+        </button>
+      </div>
+    </div>
+  <!-- 첨부 교재 PDF 전용 대화면 팝업 뷰어 모달 -->
+  <div id="pdf-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-4xl w-full h-[90vh] flex flex-col shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
+      <!-- 모달 헤더 -->
+      <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📑</span>
+          <div>
+            <h4 id="pdf-modal-title" class="text-sm font-extrabold text-slate-900">첨부 교재 원본 스캔본 열람</h4>
+            <span id="pdf-modal-page-info" class="text-[11px] text-blue-600 font-semibold">스캔 페이지: p.1</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a id="pdf-modal-open-newtab" href="training_book.pdf" target="_blank" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">
+            새 창에서 열기 ↗️
+          </a>
+          <button onclick="closePdfModal()" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 font-bold flex items-center justify-center transition">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- 모달 PDF 프레임 본문 -->
+      <div class="flex-1 bg-slate-200 relative">
+        <iframe id="pdf-modal-iframe" src="about:blank" class="w-full h-full border-0" title="교재 원본 뷰어"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- 스크립트 연결 -->
+  <script src="questions.js"></script>
+  <script src="summaryData.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
