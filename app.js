@@ -78,6 +78,8 @@ function switchTab(tab) {
     renderStats();
   } else if (tab === 'study') {
     renderStudyCards();
+  } else if (tab === 'pdf') {
+    renderMainPdfPage(pdfViewerState.pageNum || 1);
   }
 }
 
@@ -611,65 +613,182 @@ function showReferenceModal(chapterKeyword) {
   modal.classList.remove('hidden');
 }
 
-// ==================== PDF 뷰어 제어 함수 ====================
+// ==================== PDF.js 캔버스 렌더링 엔진 (Chrome 차단 방지) ====================
 
-function jumpPdfToChapter(page) {
-  const p = parseInt(page) || 1;
-  const frame = document.getElementById('main-pdf-viewer');
-  if (frame) {
-    frame.src = `training_book.pdf#page=${p}`;
+const pdfViewerState = {
+  pdfDoc: null,
+  pageNum: 1,
+  pageRendering: false,
+  pageNumPending: null,
+  scale: 1.3,
+  modalPageNum: 1,
+  modalRendering: false,
+  modalPagePending: null
+};
+
+// PDF 문서 로드
+function initPdfDoc() {
+  if (pdfViewerState.pdfDoc) return Promise.resolve(pdfViewerState.pdfDoc);
+  if (typeof pdfjsLib === 'undefined') {
+    console.error('PDF.js 라이브러리가 로드되지 않았습니다.');
+    return Promise.reject();
   }
-  const input = document.getElementById('pdf-custom-page');
-  if (input) input.value = p;
+
+  return pdfjsLib.getDocument('training_book.pdf').promise.then(pdf => {
+    pdfViewerState.pdfDoc = pdf;
+    return pdf;
+  }).catch(err => {
+    console.error('PDF 로드 실패:', err);
+    const spinner = document.getElementById('pdf-loading-spinner');
+    if (spinner) spinner.innerHTML = `<p class="text-rose-400 text-xs">PDF 교재를 불러오지 못했습니다. <a href="training_book.pdf" target="_blank" class="underline font-bold">여기</a>를 눌러 직접 열어보세요.</p>`;
+  });
 }
 
-function jumpPdfToPageInput() {
-  const input = document.getElementById('pdf-custom-page');
-  const p = Math.max(1, Math.min(143, parseInt(input.value) || 1));
-  jumpPdfToChapter(p);
+// 메인 탭 PDF 렌더링
+function renderMainPdfPage(num) {
+  pdfViewerState.pageNum = Math.max(1, Math.min(143, num));
+  const canvas = document.getElementById('pdf-render-canvas');
+  const spinner = document.getElementById('pdf-loading-spinner');
+  const pageDisplay = document.getElementById('pdf-page-display');
+  const zoomDisplay = document.getElementById('pdf-zoom-level');
+
+  if (pageDisplay) pageDisplay.textContent = `${pdfViewerState.pageNum} / 143`;
+  if (zoomDisplay) zoomDisplay.textContent = `${Math.round(pdfViewerState.scale * 100)}%`;
+
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  if (spinner) spinner.classList.remove('hidden');
+  canvas.classList.add('hidden');
+
+  initPdfDoc().then(pdf => {
+    if (!pdf) return;
+    pdf.getPage(pdfViewerState.pageNum).then(page => {
+      const viewport = page.getViewport({ scale: pdfViewerState.scale });
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      const renderContext = {
+        canvasContext: ctx,
+        viewport: viewport
+      };
+
+      page.render(renderContext).promise.then(() => {
+        if (spinner) spinner.classList.add('hidden');
+        canvas.classList.remove('hidden');
+      });
+    });
+  });
+}
+
+function pdfPrevPage() {
+  if (pdfViewerState.pageNum <= 1) return;
+  renderMainPdfPage(pdfViewerState.pageNum - 1);
+}
+
+function pdfNextPage() {
+  if (pdfViewerState.pageNum >= 143) return;
+  renderMainPdfPage(pdfViewerState.pageNum + 1);
+}
+
+function pdfZoomIn() {
+  if (pdfViewerState.scale >= 2.5) return;
+  pdfViewerState.scale += 0.2;
+  renderMainPdfPage(pdfViewerState.pageNum);
+}
+
+function pdfZoomOut() {
+  if (pdfViewerState.scale <= 0.7) return;
+  pdfViewerState.scale -= 0.2;
+  renderMainPdfPage(pdfViewerState.pageNum);
+}
+
+function jumpPdfToChapter(page) {
+  renderMainPdfPage(parseInt(page) || 1);
 }
 
 function openPdfTab(page) {
   switchTab('pdf');
   setTimeout(() => {
-    jumpPdfToChapter(page);
+    renderMainPdfPage(parseInt(page) || 1);
     const select = document.getElementById('pdf-chapter-jump');
     if (select) {
-      // 가장 가까운 챕터 선택
       const options = Array.from(select.options);
       let closest = options[0];
       for (const opt of options) {
-        if (parseInt(opt.value) <= page) {
-          closest = opt;
-        }
+        if (parseInt(opt.value) <= page) closest = opt;
       }
       select.value = closest.value;
     }
   }, 100);
 }
 
+// ==================== 모달 전용 PDF 렌더링 ====================
+
+function renderModalPdfPage(num) {
+  pdfViewerState.modalPageNum = Math.max(1, Math.min(143, num));
+  const canvas = document.getElementById('pdf-modal-canvas');
+  const spinner = document.getElementById('pdf-modal-loading');
+  const pageDisplay = document.getElementById('pdf-modal-page-display');
+  const pageInfo = document.getElementById('pdf-modal-page-info');
+
+  if (pageDisplay) pageDisplay.textContent = `${pdfViewerState.modalPageNum} / 143`;
+  if (pageInfo) pageInfo.textContent = `스캔 페이지: p.${pdfViewerState.modalPageNum} / 143 (실제 책자 약 p.${(pdfViewerState.modalPageNum - 1) * 2 + 6}쪽)`;
+
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  if (spinner) spinner.classList.remove('hidden');
+  canvas.classList.add('hidden');
+
+  initPdfDoc().then(pdf => {
+    if (!pdf) return;
+    pdf.getPage(pdfViewerState.modalPageNum).then(page => {
+      // 모달에서는 가로 너비 기준 1.2배 스케일
+      const viewport = page.getViewport({ scale: 1.25 });
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      const renderContext = {
+        canvasContext: ctx,
+        viewport: viewport
+      };
+
+      page.render(renderContext).promise.then(() => {
+        if (spinner) spinner.classList.add('hidden');
+        canvas.classList.remove('hidden');
+      });
+    });
+  });
+}
+
+function modalPdfPrevPage() {
+  if (pdfViewerState.modalPageNum <= 1) return;
+  renderModalPdfPage(pdfViewerState.modalPageNum - 1);
+}
+
+function modalPdfNextPage() {
+  if (pdfViewerState.modalPageNum >= 143) return;
+  renderModalPdfPage(pdfViewerState.modalPageNum + 1);
+}
+
 function openPdfModal(page, title = "") {
   const modal = document.getElementById('pdf-modal');
-  const iframe = document.getElementById('pdf-modal-iframe');
   const titleElem = document.getElementById('pdf-modal-title');
-  const pageInfo = document.getElementById('pdf-modal-page-info');
   const newTabBtn = document.getElementById('pdf-modal-open-newtab');
 
-  if (!modal || !iframe) return;
-
+  if (!modal) return;
   const p = Math.max(1, Math.min(143, parseInt(page) || 1));
-  iframe.src = `training_book.pdf#page=${p}`;
+
   if (titleElem) titleElem.textContent = title ? `교재 원문: ${title}` : '교직원 연수 교재 스캔본 열람';
-  if (pageInfo) pageInfo.textContent = `스캔 페이지: p.${p} / 143 (실제 책자 약 p.${(p - 1) * 2 + 6}쪽)`;
   if (newTabBtn) newTabBtn.href = `training_book.pdf#page=${p}`;
 
   modal.classList.remove('hidden');
+  renderModalPdfPage(p);
 }
 
 function closePdfModal() {
   const modal = document.getElementById('pdf-modal');
-  const iframe = document.getElementById('pdf-modal-iframe');
-  if (iframe) iframe.src = 'about:blank';
   if (modal) modal.classList.add('hidden');
 }
 

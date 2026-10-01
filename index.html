@@ -8,6 +8,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Pretendard Font -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <!-- PDF.js CDN (Chrome 차단 방지 및 크로스 브라우저 렌더러) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
   <style>
     body { font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; }
   </style>
@@ -282,11 +287,18 @@
               <option value="142">📑 60강 교사가 나아갈 길 (p.288)</option>
             </select>
 
-            <!-- 페이지 직접 입력 -->
+            <!-- 페이지 이동 컨트롤 -->
             <div class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1">
-              <span class="text-[11px] text-slate-500 font-semibold">스캔쪽:</span>
-              <input id="pdf-custom-page" type="number" min="1" max="143" value="1" class="w-12 text-center text-xs font-bold bg-transparent focus:outline-none">
-              <button onclick="jumpPdfToPageInput()" class="px-2 py-0.5 rounded-lg text-xs font-bold bg-blue-600 text-white hover:bg-blue-700">이동</button>
+              <button onclick="pdfPrevPage()" class="px-2 py-0.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200">◀</button>
+              <span id="pdf-page-display" class="text-xs font-bold text-blue-700 px-1">1 / 143</span>
+              <button onclick="pdfNextPage()" class="px-2 py-0.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-200">▶</button>
+            </div>
+
+            <!-- 확대 / 축소 -->
+            <div class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 text-xs font-bold">
+              <button onclick="pdfZoomOut()" class="px-1.5 py-0.5 hover:bg-slate-200 rounded">🔍-</button>
+              <span id="pdf-zoom-level" class="text-[11px] text-slate-500 font-semibold">100%</span>
+              <button onclick="pdfZoomIn()" class="px-1.5 py-0.5 hover:bg-slate-200 rounded">🔍+</button>
             </div>
 
             <!-- 새 창 열기 & 다운로드 -->
@@ -299,9 +311,13 @@
           </div>
         </div>
 
-        <!-- PDF 임베드 프레임 -->
-        <div class="w-full bg-slate-200 rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
-          <iframe id="main-pdf-viewer" src="training_book.pdf#page=1" class="w-full h-[78vh] border-0" title="교직원 연수 책자 원본 PDF"></iframe>
+        <!-- 고화질 Canvas PDF 렌더러 (Chrome 차단 방지) -->
+        <div class="w-full bg-slate-800 rounded-2xl overflow-auto border border-slate-700 shadow-inner p-3 sm:p-5 flex flex-col items-center justify-start min-h-[70vh] max-h-[82vh]">
+          <div id="pdf-loading-spinner" class="py-24 text-center text-slate-300">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-400 border-t-white mb-3"></div>
+            <p class="text-xs font-semibold">교재 원본을 고화질로 불러오는 중입니다...</p>
+          </div>
+          <canvas id="pdf-render-canvas" class="max-w-full shadow-2xl rounded-xl bg-white hidden transition-all duration-200"></canvas>
         </div>
       </div>
     </div>
@@ -447,6 +463,12 @@
         </div>
 
         <div class="flex items-center gap-2">
+          <!-- 모달 내 페이지 이동 -->
+          <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-xl px-2 py-1">
+            <button onclick="modalPdfPrevPage()" class="px-2 py-0.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100">◀</button>
+            <span id="pdf-modal-page-display" class="text-xs font-bold text-blue-700 px-1">1 / 143</span>
+            <button onclick="modalPdfNextPage()" class="px-2 py-0.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100">▶</button>
+          </div>
           <a id="pdf-modal-open-newtab" href="training_book.pdf" target="_blank" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">
             새 창에서 열기 ↗️
           </a>
@@ -456,9 +478,13 @@
         </div>
       </div>
 
-      <!-- 모달 PDF 프레임 본문 -->
-      <div class="flex-1 bg-slate-200 relative">
-        <iframe id="pdf-modal-iframe" src="about:blank" class="w-full h-full border-0" title="교재 원본 뷰어"></iframe>
+      <!-- 모달 Canvas 뷰어 본문 -->
+      <div class="flex-1 bg-slate-800 overflow-auto p-4 flex flex-col items-center justify-start relative">
+        <div id="pdf-modal-loading" class="py-24 text-center text-slate-300">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-400 border-t-white mb-3"></div>
+          <p class="text-xs font-semibold">고화질 스캔본 렌더링 중...</p>
+        </div>
+        <canvas id="pdf-modal-canvas" class="max-w-full shadow-2xl rounded-xl bg-white hidden"></canvas>
       </div>
     </div>
   </div>
